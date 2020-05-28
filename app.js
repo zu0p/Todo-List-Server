@@ -1,10 +1,12 @@
 var express = require('express');
+var cors = require('cors');
 var app = express();
 var bodyParser = require('body-parser');
 var userRouter = require('./route/user.js');
 var todoRouter = require('./route/todo.js');
 var mypageRouter = require('./route/mypage.js');
 
+app.use(cors());
 app.use(express.json());    //request body를 사용하기 위ㅏㅁ
 app.use(bodyParser.urlencoded({extended:true}));
 app.use('/user', userRouter);
