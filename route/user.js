@@ -52,13 +52,13 @@ router.post('/login', function(req, res){
                 res.send('err: ' + err);
             else {                
                 console.log(result[0].count);
-                res.send(result);
 
-                if(result[0].count == 1)
-                    res.status(200);
+                if(result[0].count == 1) 
+                    res.send('success');
                 else    
-                    res.status(401);
+                    res.send('fail');
                 //-> 프론트에서 status==200이면 로그인
+
             }
         });
 });
