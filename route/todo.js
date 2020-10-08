@@ -79,6 +79,20 @@ router.post('/complete_todo', function(req, res){
         });
 });
 
+//todo 완료 취소
+router.post('/uncomplete_todo', function(req, res){
+    var todo_id = req.body.id; 
+    
+    connection.query("UPDATE todo SET is_completed = 0 WHERE todo_id = "+ todo_id +"",
+        function (err, result, fields) {
+            if (err)
+                res.send('err: ' + err);
+            else {
+                res.status(200).send('success');
+            }
+    });
+});
+
 //휴지통 - hidden list 보기
 router.post('/show_hidden_list', function(req, res){
     var user_id = req.body.id;

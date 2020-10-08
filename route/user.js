@@ -60,7 +60,7 @@ router.post('/login', function(req, res){
                 console.log(result);
 
                 if(result[0].count == 1){
-                    // res.send('success');
+                    res.send('success');
                     user.isLogged = 1;
                     res.json(user);
                     // res.end(JSON.stringify(user));
