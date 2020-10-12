@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 //mysql 연결
-var connection = require('../database/db.js');
+var connection = require('../share/db.js');
 
 //todo list 목록 불러오기
 router.post('/show_todo_list', function(req, res){
@@ -110,14 +110,15 @@ router.post('/show_hidden_list', function(req, res){
 
 //휴지통 - todo 지우기
 router.post('/delete_todo', function(req, res){
-    var todo_id = req.body.selected; 
+    var todo_id = req.body.id; 
     
-    connection.query("DELETE FROM todo WHERE todo_id = "+ todo_id +"",
+    connection.query("UPDATE todo SET is_deleted = 1 WHERE todo_id = "+ todo_id +"",
         function (err, result, fields) {
             if (err)
                 res.send('err: ' + err);
             else {
                 res.status(200).send('success');
+                console.log("success")
             }
     });
 });

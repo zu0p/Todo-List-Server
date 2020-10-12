@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 //mysql 연결
-var connection = require('../database/db.js');
+var connection = require('../share/db.js');
 
 //아이디와 비밀번호가 일치하는지
 router.post('/authentication', function(req, res){

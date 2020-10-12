@@ -1,18 +1,32 @@
-var express = require('express');
 var cors = require('cors');
-var app = express();
+var createError = require('http-errors')
+var express = require('express')
 var bodyParser = require('body-parser');
-var userRouter = require('./route/user.js');
-var todoRouter = require('./route/todo.js');
-var mypageRouter = require('./route/mypage.js');
+var path = require('path')
+var morgan = require('morgan')
 
-app.use(cors());
-app.use(express.json());    //request body를 사용하기 위ㅏㅁ
-app.use(bodyParser.urlencoded({extended:true}));
+const model = require('./models/index')
+
+model.sequelize.sync().then(() => {
+    console.log("success connect DB")
+}).catch( err => {
+    console.log("fail connect DB")
+    console.log(err)
+})
+
+var app = express()
+
+// 미들웨어 
+app.use(cors())
+app.use(morgan('short'))
+app.use(bodyParser.urlencoded({extended:true}))
+
+var userRouter = require('./route/user')
+var todoRouter = require('./route/todo')
+
 app.use('/user', userRouter);
 app.use('/todo', todoRouter);
-app.use('/mypage', mypageRouter);
 
-app.listen(8282, function(){
-    console.log("Server starting with 8282");
-});
+app.listen(8282, () => {
+    console.log('Server running with 8282')
+})

@@ -1,74 +1,100 @@
-var express = require('express');
-var router = express.Router();
+var express = require("express")
+var router = express.Router()
+var models = require("../models")
+var util = require("../util")
+var jwt = require("jsonwebtoken")
 
-//mysql 연결
-var connection = require('../database/db.js');
+router.post("/signup", (req, res, next)=>{
+    /*
+      url         : ~/user/signup
+      method      : post
+      input       : body  - id(userid), pw(user pw)
+      output      : success / err
+      description : 회원 가입
+     */
 
-//회원가입
-router.post('/signin', function(req, res){
-    var user_id = req.body.id;
-    var user_pw = req.body.pw;
+    var body = req.body
 
-    if(user_id && user_pw){
-        connection.query("INSERT INTO user (user_id, user_pw) VALUES('"+user_id+"', '"+user_pw+"')",
-            function(err, result, fields){
-                if(err)
-                    res.send('err: ' + err);
-                else{
-                    console.log(user_id+', '+user_pw);
-                    res.status(200).send('success create user name: '+user_id+' pw: '+user_pw);
-                }
-            });
+    models.user.create({
+      user_id: body.id,
+      user_pw: body.pw
+    })
+    .then( result => {
+      res.json(util.successTrue())
+    })
+    .catch( err => {
+      res.json(util.successFalse(err))
+    })
+});
+
+
+router.post("/check_id_duplication", (req, res, next)=>{
+    /*
+      url         : ~/user/check_id_duplication
+      method      : post
+      input       : body  - id(userid)
+      output      : success / err
+      description : 아이디 중복 확인 - 사용가능한 아이디일경우 success
+     */
+
+    var id = req.body.id
+
+    models.user.findAndCountAll({
+      where: {user_id: id}
+    })
+    .then( result => {
+      if(result.count != 1){
+        res.json(util.successTrue())
+      }
+      else{
+        res.json(util.successFalse())
+      }
+    })
+    .catch( err => {
+      console.log(err)
+    })
+});
+
+
+router.post("/login", (req, res, next)=>{  
+  /*
+      url         : ~/user/login
+      method      : post
+      input       : body  - id(user id), pw(user pw)
+      output      : success / err
+      description : 로그인 - 성공 시 token 반환
+     */
+
+  var body = req.body
+  
+  models.user.findAll({
+    where:{
+      user_id: body.id,
+      user_pw: body.pw
     }
-});
+  })
+  .then( result => {
+    var payload = {
+      user_id: result[0].user_id
+    }
+    const secret = util.secret
+    var option = {
+      issuer: 'zu0',
+      subject: 'todo_list_service_token'
+    }
 
-//아이디 중복 확인
-router.post('/check_id_duplication', function(req, res){
-    var user_id = req.body.id;
-
-    connection.query("SELECT COUNT (user_id) AS count FROM user WHERE user_id = '"+user_id+"'",
-        function(err, result, fields){
-            if(err)
-                res.send('err: ', err);
-            else {
-                if(result[0].count == 0)
-                    res.status(200).send('yes');
-                else
-                    res.status(401);
-
-                //프론트에서 result==0인 경우에만 아이디 사용 가능
-            }
-        });
-});
-
-//로그인
-router.post('/login', function(req, res){
-    var user_id = req.body.id;
-    var user_pw = req.body.pw;
-    var user = {
-        id: user_id,
-        pw: user_pw,
-        isLogged: 0
-    };
-
-    connection.query("SELECT COUNT (user_id) AS count FROM user WHERE user_id = '"+user_id+"' AND user_pw = '"+user_pw+"'",
-        function(err, result, fidleds){
-            if(err)
-                res.send('err: ' + err);
-            else {                
-                console.log(result[0].count);
-                console.log(result);
-
-                if(result[0].count == 1){
-                    res.send('success');
-                    user.isLogged = 1;
-                    res.json(user);
-                    // res.end(JSON.stringify(user));
-                }
-                else    
-                    res.send('fail');
-            }
-        });
+    jwt.sign(payload, secret, option, function(err, token){
+      if(err){
+        res.json(util.successFalse(err.message, '아이디 혹은 비밀번호가 틀립니다.'))
+      }
+      else{
+        res.json(util.successTrue(token))
+      }
+    })
+  })
+  .catch( err => {
+    res.json(util.successFalse(err.message))
+  })
 });
 
 module.exports = router;
