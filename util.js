@@ -48,8 +48,8 @@ util.verifyJWT = function (token) {
     var result = '';
 
     try {
-        decode = jwt.verify(token, util.secret);
-        
+        // token 복호화
+        decode = jwt.verify(token, util.secret);        
         success = true;
         result = decode;
     } catch (err) {

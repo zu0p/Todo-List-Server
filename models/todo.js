@@ -2,10 +2,6 @@
 
 module.exports = (sequelize, DataTypes) => {
   var todo = sequelize.define('todo', {
-    todo_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
     contents: {
       type: DataTypes.STRING,
       allowNull: false

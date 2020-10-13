@@ -1,140 +1,219 @@
-var express = require('express');
-var router = express.Router();
+var express = require("express")
+var router = express.Router()
+var models = require("../models")
+var util = require("../util")
+var jwt = require("jsonwebtoken")
 
-//mysql 연결
-var connection = require('../share/db.js');
+router.get('/show_todo_list', function(req, res, next){
+    /*
+      url         : ~/todo/show_todo_list
+      method      : get
+      input       : -
+      output      : todo list
+      description : todo list 목록 불러오기
+    */
 
-//todo list 목록 불러오기
-router.post('/show_todo_list', function(req, res){
-    var user_id = req.body.id;
+    var token = req.headers['x-access-token'] || req.query.token
+    var result_jwt = util.verifyJWT(token)
+    var decord = ''
 
-    connection.query("SELECT todo_id, contents, is_completed, is_deleted FROM todo WHERE user_id = '"+user_id+"'",
-        function (err, result, fields) {
-            if (err)
-                res.send('err: ' + err);
-            else {
-                res.status(200).send(result);
-            }
-        });
+    if(result_jwt.success){
+        decord = result_jwt.result;
+    }
+    else{
+        return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+    }
+
+    models.todo.findAll({
+        attributes: [ 'id', 'user_id', 'contents', 'is_completed', 'is_deleted'],
+        where: {user_id: decode.user_id}
+    })
+    .then(result => {
+        res.json(util.successTrue(result))
+    })
+    .catch(err => {
+        res.json(util.successFalse(err))
+    })
 });
 
-//todo 추가
-router.post('/create_todo', function(req, res){
-    var contents = req.body.contents; 
-    var user_id = req.body.id;
-        
-    connection.query("INSERT INTO todo (contents, user_id, is_completed, is_deleted) VALUES('"+contents+"', '"+user_id+"', 0, 0)",
-        function (err, result, fields) {
-            if (err)
-                res.send('err: ' + err);
-            else {
-                console.log(result);
-                res.status(200).send('success');
-            }
-    });
+router.put('/create_todo', function(req, res){
+    /*
+      url         : ~/todo/create_todo
+      method      : put
+      input       : body - contents(todo 내용)
+      output      : success / err
+      description : 할일 추가
+    */
+
+    var token = req.headers['x-access-token'] || req.query.token
+    var result_jwt = util.verifyJWT(token)
+    var decord = ''
+
+    if(result_jwt.success){
+        decord = result_jwt.result
+    }
+    else {
+        return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+    }
+
+    var body = req.body
+
+    models.todo.create({
+        user_id: decode.user_id,
+        contents: body.contents,
+        is_completed: 0,
+        is_deleted: 0
+    })
+    .then(result => {
+        res.json(util.successTrue())
+    })
+    .then(err => {
+        res.json(util.successFalse(err))
+    })
 });
 
-//todo 휴지통으로 이동
-router.post('/goto_garbage', function(req, res){
-    var todo_id = req.body.id;
+router.post('/update_todo', function(req, res, next){
+    /*
+      url         : ~/todo/update_todo
+      method      : post
+      input       : body - contents(todo 수정 내용), todo의 id
+      output      : success / err
+      description : 할일 수정
+    */
+    var token = req.headers['x-access-token'] || req.query.token
+    var result_jwt = util.verifyJWT(token)
+    var decord = ''
 
-    connection.query("UPDATE todo SET is_deleted = 1 WHERE todo_id = "+todo_id+"",
-        function(err, result, fields){
-            if(err)
-                res.send('err: ' + err);
-            else {
-                res.status(200);
-            }
-        });
+    if(result_jwt.success){
+        decord = result_jwt.result
+    }
+    else {
+        return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+    }
+
+    var body = req.body
+
+    models.todo.update({
+        contents: body.contents
+    },{
+        where: {
+            user_id: decode.user_id,
+            id: body.id
+        }
+    })
+    .then(result => {
+        res.json(util.successTrue())
+    })
+    .then(err => {
+        res.json(util.successFalse(err))
+    })
 });
 
-//todo 내용 수정
-router.post('/update_todo', function(req, res){
-    var todo_id = req.body.id;
-    var contents = req.body.input;
-
-    connection.query("UPDATE todo SET contents = '"+contents+"' WHERE todo_id = "+todo_id+"",
-        function(err, result, fields){
-            if(err)
-                res.send('err: ' + err);
-            else {
-                console.log(result);
-                res.status(200).send('success');
-            }
-        });
-});
-
-//todo 완료
 router.post('/complete_todo', function(req, res){
-    var todo_id = req.body.id;
+    /*
+      url         : ~/todo/complete_todo
+      method      : post
+      input       : body - id(todo_id)
+      output      : success / err
+      description : todos table에 id가 id인 것을 완료체크
+    */
+   var token = req.headers['x-access-token'] || req.query.token
+   var result_jwt = util.verifyJWT(token)
+   var decord = ''
 
-    connection.query("UPDATE todo SET is_completed = 1 WHERE todo_id = "+todo_id+"",
-        function(err, result, fields){
-            if(err)
-                res.send('err: ' + err);
-            else {
-                console.log(result);
-                res.status(200).send('success');
-            }
-        });
+   if(result_jwt.success){
+       decord = result_jwt.result
+   }
+   else {
+       return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+   }
+
+   models.todo.update({
+       is_completed: 1
+   },{
+       where: {
+           user_id: decode.user_id,
+           id: req.body.id
+        }
+   })
+   .then(result => {
+       res.json(util.successTrue())
+   })
+   .then(err => {
+       res.json(util.successFalse(err))
+   })
 });
 
 //todo 완료 취소
 router.post('/uncomplete_todo', function(req, res){
-    var todo_id = req.body.id; 
-    
-    connection.query("UPDATE todo SET is_completed = 0 WHERE todo_id = "+ todo_id +"",
-        function (err, result, fields) {
-            if (err)
-                res.send('err: ' + err);
-            else {
-                res.status(200).send('success');
-            }
-    });
+    /*
+      url         : ~/todo/uncomplete_todo
+      method      : post
+      input       : body - id(todo_id)
+      output      : success / err
+      description : todos table에 id가 id인 것을 완료체크 해제
+    */
+   var token = req.headers['x-access-token'] || req.query.token
+   var result_jwt = util.verifyJWT(token)
+   var decord = ''
+
+   if(result_jwt.success){
+       decord = result_jwt.result
+   }
+   else {
+       return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+   }
+
+   models.todo.update({
+       is_completed: 0
+   },{
+       where: {
+           user_id: decode.user_id,
+           id: req.body.id
+        }
+   })
+   .then(result => {
+       res.json(util.successTrue())
+   })
+   .then(err => {
+       res.json(util.successFalse(err))
+   })
 });
 
-//휴지통 - hidden list 보기
-router.post('/show_hidden_list', function(req, res){
-    var user_id = req.body.id;
-
-    connection.query("SELECT todo_id, contents FROM todo WHERE user_id = '"+user_id+"' AND is_deleted = 1",
-        function(err, result, fields){
-            if(err)
-                res.send('err: ' + err);
-            else {
-                console.log(result);
-                res.status(200).send(result);
-            }
-    });
-});
-
-//휴지통 - todo 지우기
+//todo 지우기
 router.post('/delete_todo', function(req, res){
-    var todo_id = req.body.id; 
-    
-    connection.query("UPDATE todo SET is_deleted = 1 WHERE todo_id = "+ todo_id +"",
-        function (err, result, fields) {
-            if (err)
-                res.send('err: ' + err);
-            else {
-                res.status(200).send('success');
-                console.log("success")
-            }
-    });
-});
+    /*
+      url         : ~/todo/delete_todo
+      method      : post
+      input       : body - id(todo_id)
+      output      : success / err
+      description : todos table에 id가 id인 것을 삭제(체크만)
+    */
+   var token = req.headers['x-access-token'] || req.query.token
+   var result_jwt = util.verifyJWT(token)
+   var decord = ''
 
-//휴지통 - todo 복구
-router.post('/recover_todo', function(req, res){
-    var todo_id = req.body.selected; 
-    
-    connection.query("UPDATE todo SET is_deleted = 0 WHERE todo_id = "+ todo_id +"",
-        function (err, result, fields) {
-            if (err)
-                res.send('err: ' + err);
-            else {
-                res.status(200).send('success');
-            }
-    });
+   if(result_jwt.success){
+       decord = result_jwt.result
+   }
+   else {
+       return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+   }
+
+   models.todo.update({
+       is_deleted: 1
+   },{
+       where: {
+           user_id: decode.user_id,
+           id: req.body.id
+        }
+   })
+   .then(result => {
+       res.json(util.successTrue())
+   })
+   .then(err => {
+       res.json(util.successFalse(err))
+   })
 });
 
 module.exports = router;

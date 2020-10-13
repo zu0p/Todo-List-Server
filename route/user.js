@@ -83,6 +83,7 @@ router.post("/login", (req, res, next)=>{
       subject: 'todo_list_service_token'
     }
 
+    // jwt으로 토큰 발급
     jwt.sign(payload, secret, option, function(err, token){
       if(err){
         res.json(util.successFalse(err.message, '아이디 혹은 비밀번호가 틀립니다.'))
