@@ -20,6 +20,7 @@ var app = express()
 app.use(cors())
 app.use(morgan('short'))
 app.use(bodyParser.urlencoded({extended:true}))
+app.use(bodyParser.json())
 
 var userRouter = require('./route/user')
 var todoRouter = require('./route/todo')
