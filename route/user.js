@@ -1,3 +1,4 @@
+var uuid = require("uuid4")
 var express = require("express")
 var router = express.Router()
 var models = require("../models")
@@ -96,6 +97,42 @@ router.post("/login", (req, res, next)=>{
   .catch( err => {
     res.json(util.successFalse(err.message))
   })
+});
+
+router.post("/kakao", async (req, res, next) => {  
+  /*
+      url         : ~/user/kakao
+      method      : post
+      input       : header-access-token,refresh-token, body-id,name,email,profileUrl
+      output      : success,data / err
+      description : 카카오 로그인
+     */
+  const body = req.body
+  const accessToken = "kakao_"+req.headers['access-token']
+  const refreshToken = "kakao_"+req.headers['refresh-token']
+  const kakao_id = body.id
+  const kakao_pw = uuid()
+
+  try{
+    const dupRes = await models.user.findAndCountAll({
+      where: {user_id: body.id}
+    })
+    
+    if(dupRes.count!=1){  // 새로운 아이디이면
+      try{
+        const createRes = await models.user.create({   // user create
+          user_id: kakao_id,
+          user_pw: kakao_pw
+        })    
+      }catch(err){
+        res.json(err)
+      }
+    }    
+    res.json(util.successTrue(accessToken))
+  } catch(err){
+    res.json(err)
+    console.log(err)
+  }
 });
 
 module.exports = router;

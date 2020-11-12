@@ -1,10 +1,11 @@
+var axios = require("axios")
 var express = require("express")
 var router = express.Router()
 var models = require("../models")
 var util = require("../util")
 var jwt = require("jsonwebtoken")
 
-router.get('/show_todo_list', function(req, res, next){
+router.get('/show_todo_list', async function(req, res, next){
     /*
       url         : ~/todo/show_todo_list
       method      : get
@@ -13,20 +14,42 @@ router.get('/show_todo_list', function(req, res, next){
       description : todo list 목록 불러오기
     */
 
-    var token = req.headers['x-access-token'] || req.query.token
-    var result_jwt = util.verifyJWT(token)
-    var decord = ''
-
-    if(result_jwt.success){
-        decord = result_jwt.result;
+    var token = req.headers['x-access-token']
+    var token_id
+    
+    if(token.indexOf('kakao_') == 0){
+        console.log("if진입 후")
+        const kakao_token = token.substring(6)
+        
+        try{            
+            const kakaoRes = await axios({
+                method: 'get',
+                url: 'https://kapi.kakao.com/v1/user/access_token_info',
+                headers: {'Authorization': `Bearer {${kakao_token}}`}
+            })
+            
+            token_id = kakaoRes.data.id
+        }catch(err){
+            console.log(err)
+        }        
     }
     else{
-        return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
-    }
+        console.log("else 진입")
+        var result_jwt = util.verifyJWT(token)
+        var decord = ''
+
+        if(result_jwt.success){
+            decord = result_jwt.result
+            token_id = decode.user_id
+        }
+        else{
+            return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+        }
+    }    
 
     models.todo.findAll({
         attributes: [ 'id', 'user_id', 'contents', 'is_completed', 'is_deleted'],
-        where: {user_id: decode.user_id}
+        where: {user_id: token_id}
     })
     .then(result => {
         res.json(util.successTrue(result))
@@ -36,7 +59,7 @@ router.get('/show_todo_list', function(req, res, next){
     })
 });
 
-router.put('/create_todo', function(req, res){
+router.put('/create_todo', async function(req, res){
     /*
       url         : ~/todo/create_todo
       method      : put
@@ -44,22 +67,43 @@ router.put('/create_todo', function(req, res){
       output      : success / err
       description : 할일 추가
     */
-
     var token = req.headers['x-access-token'] || req.query.token
-    var result_jwt = util.verifyJWT(token)
-    var decord = ''
+    var token_id
+    
+    if(token.indexOf('kakao_') == 0){
+        console.log("if진입 후")
+        const kakao_token = token.substring(6)
+        
+        try{            
+            const kakaoRes = await axios({
+                method: 'get',
+                url: 'https://kapi.kakao.com/v1/user/access_token_info',
+                headers: {'Authorization': `Bearer {${kakao_token}}`}
+            })
+            
+            token_id = kakaoRes.data.id
+        }catch(err){
+            console.log(err)
+        }        
+    }
+    else{
+        console.log("else 진입")
+        var result_jwt = util.verifyJWT(token)
+        var decord = ''
 
-    if(result_jwt.success){
-        decord = result_jwt.result
-    }
-    else {
-        return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
-    }
+        if(result_jwt.success){
+            decord = result_jwt.result
+            token_id = decode.user_id
+        }
+        else{
+            return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+        }
+    } 
 
     var body = req.body
 
     models.todo.create({
-        user_id: decode.user_id,
+        user_id: token_id,
         contents: body.contents,
         is_completed: 0,
         is_deleted: 0
@@ -72,7 +116,7 @@ router.put('/create_todo', function(req, res){
     })
 });
 
-router.post('/update_todo', function(req, res, next){
+router.post('/update_todo', async function(req, res, next){
     /*
       url         : ~/todo/update_todo
       method      : post
@@ -81,23 +125,45 @@ router.post('/update_todo', function(req, res, next){
       description : 할일 수정
     */
     var token = req.headers['x-access-token'] || req.query.token
-    var result_jwt = util.verifyJWT(token)
-    var decord = ''
-
-    if(result_jwt.success){
-        decord = result_jwt.result
+    var token_id
+    
+    if(token.indexOf('kakao_') == 0){
+        console.log("if진입 후")
+        const kakao_token = token.substring(6)
+        
+        try{            
+            const kakaoRes = await axios({
+                method: 'get',
+                url: 'https://kapi.kakao.com/v1/user/access_token_info',
+                headers: {'Authorization': `Bearer {${kakao_token}}`}
+            })
+            
+            token_id = kakaoRes.data.id
+        }catch(err){
+            console.log(err)
+        }        
     }
-    else {
-        return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
-    }
+    else{
+        console.log("else 진입")
+        var result_jwt = util.verifyJWT(token)
+        var decord = ''
 
+        if(result_jwt.success){
+            decord = result_jwt.result
+            token_id = decode.user_id
+        }
+        else{
+            return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+        }
+    } 
+    
     var body = req.body
 
     models.todo.update({
         contents: body.contents
     },{
         where: {
-            user_id: decode.user_id,
+            user_id: token_id,
             id: body.id
         }
     })
@@ -109,7 +175,7 @@ router.post('/update_todo', function(req, res, next){
     })
 });
 
-router.post('/complete_todo', function(req, res){
+router.post('/complete_todo', async function(req, res){
     /*
       url         : ~/todo/complete_todo
       method      : post
@@ -118,21 +184,43 @@ router.post('/complete_todo', function(req, res){
       description : todos table에 id가 id인 것을 완료체크
     */
    var token = req.headers['x-access-token'] || req.query.token
-   var result_jwt = util.verifyJWT(token)
-   var decord = ''
+   var token_id
+    
+    if(token.indexOf('kakao_') == 0){
+        console.log("if진입 후")
+        const kakao_token = token.substring(6)
+        
+        try{            
+            const kakaoRes = await axios({
+                method: 'get',
+                url: 'https://kapi.kakao.com/v1/user/access_token_info',
+                headers: {'Authorization': `Bearer {${kakao_token}}`}
+            })
+            
+            token_id = kakaoRes.data.id
+        }catch(err){
+            console.log(err)
+        }        
+    }
+    else{
+        console.log("else 진입")
+        var result_jwt = util.verifyJWT(token)
+        var decord = ''
 
-   if(result_jwt.success){
-       decord = result_jwt.result
-   }
-   else {
-       return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
-   }
+        if(result_jwt.success){
+            decord = result_jwt.result
+            token_id = decode.user_id
+        }
+        else{
+            return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+        }
+    } 
 
    models.todo.update({
        is_completed: 1
    },{
        where: {
-           user_id: decode.user_id,
+           user_id: token_id,
            id: req.body.id
         }
    })
@@ -145,7 +233,7 @@ router.post('/complete_todo', function(req, res){
 });
 
 //todo 완료 취소
-router.post('/uncomplete_todo', function(req, res){
+router.post('/uncomplete_todo', async function(req, res){
     /*
       url         : ~/todo/uncomplete_todo
       method      : post
@@ -154,21 +242,43 @@ router.post('/uncomplete_todo', function(req, res){
       description : todos table에 id가 id인 것을 완료체크 해제
     */
    var token = req.headers['x-access-token'] || req.query.token
-   var result_jwt = util.verifyJWT(token)
-   var decord = ''
+   var token_id
+    
+    if(token.indexOf('kakao_') == 0){
+        console.log("if진입 후")
+        const kakao_token = token.substring(6)
+        
+        try{            
+            const kakaoRes = await axios({
+                method: 'get',
+                url: 'https://kapi.kakao.com/v1/user/access_token_info',
+                headers: {'Authorization': `Bearer {${kakao_token}}`}
+            })
+            
+            token_id = kakaoRes.data.id
+        }catch(err){
+            console.log(err)
+        }        
+    }
+    else{
+        console.log("else 진입")
+        var result_jwt = util.verifyJWT(token)
+        var decord = ''
 
-   if(result_jwt.success){
-       decord = result_jwt.result
-   }
-   else {
-       return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
-   }
+        if(result_jwt.success){
+            decord = result_jwt.result
+            token_id = decode.user_id
+        }
+        else{
+            return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+        }
+    } 
 
    models.todo.update({
        is_completed: 0
    },{
        where: {
-           user_id: decode.user_id,
+           user_id: token_id,
            id: req.body.id
         }
    })
@@ -181,7 +291,7 @@ router.post('/uncomplete_todo', function(req, res){
 });
 
 //todo 지우기
-router.post('/delete_todo', function(req, res){
+router.post('/delete_todo', async function(req, res){
     /*
       url         : ~/todo/delete_todo
       method      : post
@@ -190,21 +300,43 @@ router.post('/delete_todo', function(req, res){
       description : todos table에 id가 id인 것을 삭제(체크만)
     */
    var token = req.headers['x-access-token'] || req.query.token
-   var result_jwt = util.verifyJWT(token)
-   var decord = ''
+   var token_id
+    
+    if(token.indexOf('kakao_') == 0){
+        console.log("if진입 후")
+        const kakao_token = token.substring(6)
+        
+        try{            
+            const kakaoRes = await axios({
+                method: 'get',
+                url: 'https://kapi.kakao.com/v1/user/access_token_info',
+                headers: {'Authorization': `Bearer {${kakao_token}}`}
+            })
+            
+            token_id = kakaoRes.data.id
+        }catch(err){
+            console.log(err)
+        }        
+    }
+    else{
+        console.log("else 진입")
+        var result_jwt = util.verifyJWT(token)
+        var decord = ''
 
-   if(result_jwt.success){
-       decord = result_jwt.result
-   }
-   else {
-       return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
-   }
+        if(result_jwt.success){
+            decord = result_jwt.result
+            token_id = decode.user_id
+        }
+        else{
+            return res.json(util.successFalse(result_jwt.result, 'token 검증 실패'))
+        }
+    } 
 
    models.todo.update({
        is_deleted: 1
    },{
        where: {
-           user_id: decode.user_id,
+           user_id: token_id,
            id: req.body.id
         }
    })
